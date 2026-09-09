@@ -154,38 +154,72 @@ function markFor(pos) {
   if (id && liveMarks[id]) return liveMarks[id].price;
   return pos.entry;
 }
+function lastQuote(sym) {
+  // Last known quote for any symbol, or null. Sync — trains read the cache.
+  var s = String(sym).trim().toUpperCase();
+  var m = liveMarks[s]; // symbol-keyed marks (stock/futures feeds)
+  if (m && typeof m.price === "number") return { price: m.price, ts: m.ts };
+  var id = cgId(s); // crypto marks are keyed by CoinGecko id
+  if (id && liveMarks[id]) return { price: liveMarks[id].price, ts: liveMarks[id].ts };
+  return null;
+}
 
 /* ---------------- actions ---------------- */
 
 function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
 
-function openPosition(market) {
-  var sym = document.getElementById("f-sym").value.trim().toUpperCase();
-  var side = document.getElementById("f-side").value;
-  var qty = parseFloat(document.getElementById("f-qty").value);
-  var entry = parseFloat(document.getElementById("f-entry").value);
-  if (!sym) return alert("Enter a symbol.");
-  if (!(qty > 0)) return alert("Quantity must be above 0.");
-  if (!(entry >= 0)) return alert("Enter a valid price.");
-  if (market === "prediction" && (entry < 0 || entry > 100)) return alert("Prediction price must be 0–100¢.");
-  state.accounts[market].positions.push({ id: uid(), market: market, symbol: sym, side: side, qty: qty, entry: entry, ts: Date.now() });
-  save(); render();
+function placePosition(market, sym, side, qty, entry) {
+  // Core trade open. Throws on bad input; the DOM form and the Paper API both go through here.
+  if (!MARKETS[market]) throw new Error("unknown account: " + market);
+  sym = String(sym == null ? "" : sym).trim().toUpperCase();
+  if (!sym) throw new Error("Enter a symbol.");
+  if (!(qty > 0)) throw new Error("Quantity must be above 0.");
+  if (!(entry >= 0)) throw new Error("Enter a valid price.");
+  if (market === "prediction" && (entry < 0 || entry > 100)) throw new Error("Prediction price must be 0–100¢.");
+  var pos = { id: uid(), market: market, symbol: sym, side: side, qty: qty, entry: entry, ts: Date.now() };
+  state.accounts[market].positions.push(pos);
+  save();
+  return pos;
 }
 
-function closePosition(market, id) {
+function openPosition(market) {
+  try {
+    placePosition(market,
+      document.getElementById("f-sym").value,
+      document.getElementById("f-side").value,
+      parseFloat(document.getElementById("f-qty").value),
+      parseFloat(document.getElementById("f-entry").value));
+  } catch (e) { alert(e.message); return; }
+  render();
+}
+
+function closePositionCore(market, id, exit) {
+  // Core trade close. Throws on bad input; the DOM form and the Paper API both go through here.
+  // Returns the history record. Prediction markets close by resolving: exit 0 or 100 only.
+  if (!MARKETS[market]) throw new Error("unknown account: " + market);
   var acct = state.accounts[market];
   var i, pos = null;
   for (i = 0; i < acct.positions.length; i++) if (acct.positions[i].id === id) pos = acct.positions[i];
-  if (!pos) return;
-  var exit;
-  if (market === "prediction") return; // resolved via buttons instead
-  exit = parseFloat(document.getElementById("x-" + id).value);
-  if (!(exit >= 0)) return alert("Enter a valid exit price.");
+  if (!pos) throw new Error("position not found: " + id);
+  if (market === "prediction") {
+    if (exit !== 0 && exit !== 100) throw new Error("Prediction close: exit must be 0 (NO happened) or 100 (YES happened).");
+    return resolvePosition(market, id, exit === 100 ? "yes" : "no");
+  }
+  if (!(exit >= 0)) throw new Error("Enter a valid exit price.");
   var pnl = calcPnl(pos.side, pos.qty, pos.entry, exit);
   acct.cash += pnl;
-  acct.history.unshift({ id: uid(), symbol: pos.symbol, side: pos.side, qty: pos.qty, entry: pos.entry, exit: exit, pnl: pnl, ts: Date.now() });
+  var rec = { id: uid(), symbol: pos.symbol, side: pos.side, qty: pos.qty, entry: pos.entry, exit: exit, pnl: pnl, ts: Date.now() };
+  acct.history.unshift(rec);
   acct.positions = acct.positions.filter(function (p) { return p.id !== id; });
-  save(); render();
+  save();
+  return rec;
+}
+
+function closePosition(market, id) {
+  try {
+    closePositionCore(market, id, parseFloat(document.getElementById("x-" + id).value));
+  } catch (e) { alert(e.message); return; }
+  render();
 }
 
 function resolvePosition(market, id, outcome) {
@@ -197,10 +231,12 @@ function resolvePosition(market, id, outcome) {
   var resolvePrice = outcome === "yes" ? 100 : 0;
   var pnl = predPnl(pos.side, pos.qty, pos.entry, resolvePrice);
   acct.cash += pnl;
-  acct.history.unshift({ id: uid(), symbol: pos.symbol, side: pos.side, qty: pos.qty, entry: pos.entry,
-    exit: resolvePrice, exitLabel: outcome === "yes" ? "Resolved YES" : "Resolved NO", pnl: pnl, ts: Date.now() });
+  var rec = { id: uid(), symbol: pos.symbol, side: pos.side, qty: pos.qty, entry: pos.entry,
+    exit: resolvePrice, exitLabel: outcome === "yes" ? "Resolved YES" : "Resolved NO", pnl: pnl, ts: Date.now() };
+  acct.history.unshift(rec);
   acct.positions = acct.positions.filter(function (p) { return p.id !== id; });
-  save(); render();
+  save();
+  return rec;
 }
 
 function resetAccount(market) {
@@ -251,6 +287,81 @@ function importJSON(input) {
   r.readAsText(f);
   input.value = "";
 }
+
+/* ---------------- Paper API (window.Paper) ---------------- */
+/* Programmatic trading for bots ("trains"). Same core functions as the UI,
+   same localStorage — paper only: nothing here touches real money.
+   Trains run in this page's console/devtools while the page is open. */
+
+function apiAccount(account) {
+  if (!MARKETS[account]) throw new Error("unknown account: " + account + " (" + MARKET_KEYS.join("|") + ")");
+  return state.accounts[account];
+}
+function apiSide(account, side) {
+  var want = String(side).trim().toLowerCase(), ok = null, i;
+  for (i = 0; i < MARKETS[account].sides.length; i++) {
+    if (MARKETS[account].sides[i].toLowerCase() === want) ok = MARKETS[account].sides[i];
+  }
+  if (!ok) throw new Error("bad side for " + account + ": " + side + " (" + MARKETS[account].sides.join("|") + ")");
+  return ok;
+}
+function apiPriceOrQuote(symbol, price, what) {
+  if (price !== undefined && price !== null) {
+    if (!(price >= 0)) throw new Error("invalid " + what + " price");
+    return price;
+  }
+  var q = lastQuote(symbol);
+  if (!q) throw new Error("no live quote for " + String(symbol).toUpperCase() + " — pass a price explicitly");
+  return q.price;
+}
+
+var Paper = {
+  accounts: function () {
+    var per = allStats().per;
+    return MARKET_KEYS.map(function (k) {
+      var s = per[k], acct = state.accounts[k];
+      return { account: k, name: MARKETS[k].name, start: acct.start, cash: acct.cash,
+        equity: s.equity, realized: s.realized, unrealized: s.unrealized,
+        winRate: s.winRate, open: acct.positions.length, trades: s.trades };
+    });
+  },
+  positions: function (account) {
+    return apiAccount(account).positions.map(function (p) {
+      var mk = markFor(p);
+      return { id: p.id, market: p.market, symbol: p.symbol, side: p.side, qty: p.qty,
+        entry: p.entry, ts: p.ts, mark: mk, unrealized: unrealized(p, mk) };
+    });
+  },
+  trades: function (account) {
+    return apiAccount(account).history.map(function (t) {
+      return { id: t.id, symbol: t.symbol, side: t.side, qty: t.qty, entry: t.entry,
+        exit: t.exit, exitLabel: t.exitLabel, pnl: t.pnl, ts: t.ts };
+    });
+  },
+  place: function (o) {
+    o = o || {};
+    var acct = o.account;
+    apiAccount(acct);
+    var pos = placePosition(acct, o.symbol, apiSide(acct, o.side), o.qty, apiPriceOrQuote(o.symbol, o.price, "entry"));
+    if (typeof document !== "undefined") render();
+    return pos;
+  },
+  close: function (account, positionId, exitPrice) {
+    var acct = apiAccount(account), pos = null, i;
+    for (i = 0; i < acct.positions.length; i++) if (acct.positions[i].id === positionId) pos = acct.positions[i];
+    if (!pos) throw new Error("position not found: " + positionId);
+    var rec = closePositionCore(account, positionId, apiPriceOrQuote(pos.symbol, exitPrice, "exit"));
+    if (typeof document !== "undefined") render();
+    return rec;
+  },
+  quote: function (symbol) {
+    var q = lastQuote(symbol);
+    if (!q) return null;
+    return { symbol: String(symbol).trim().toUpperCase(), price: q.price, ts: q.ts,
+      staleSec: Math.round((Date.now() - q.ts) / 1000) };
+  }
+};
+if (typeof window !== "undefined") window.Paper = Paper;
 
 /* ---------------- render ---------------- */
 
@@ -414,8 +525,8 @@ function bindActions(root) {
       var m = el.getAttribute("data-m"), id = el.getAttribute("data-id"), i = el.getAttribute("data-i");
       if (act === "open") openPosition(m);
       else if (act === "close") closePosition(m, id);
-      else if (act === "resolve-yes") { if (confirm("Resolve YES — event happened (pays 100)?")) resolvePosition(m, id, "yes"); }
-      else if (act === "resolve-no") { if (confirm("Resolve NO — event didn't happen (pays 0)?")) resolvePosition(m, id, "no"); }
+      else if (act === "resolve-yes") { if (confirm("Resolve YES — event happened (pays 100)?")) { resolvePosition(m, id, "yes"); render(); } }
+      else if (act === "resolve-no") { if (confirm("Resolve NO — event didn't happen (pays 0)?")) { resolvePosition(m, id, "no"); render(); } }
       else if (act === "reset") resetAccount(m);
       else if (act === "setstart") setStart(m);
       else if (act === "togglerule") toggleRule(parseInt(i, 10));
@@ -458,9 +569,14 @@ if (typeof document !== "undefined") {
   render();
   refreshLiveMarks();
   setInterval(refreshLiveMarks, 60000);
+  console.log("Paper API ready — try Paper.accounts()");
 }
 
 if (typeof module !== "undefined") {
   module.exports = { calcPnl: calcPnl, predPnl: predPnl, unrealized: unrealized, accountStats: accountStats, fmt: fmt, fmtSign: fmtSign,
-    MARKETS: MARKETS, COINGECKO_IDS: COINGECKO_IDS, renderAccount: renderAccount };
+    MARKETS: MARKETS, COINGECKO_IDS: COINGECKO_IDS, renderAccount: renderAccount,
+    defaultState: defaultState, placePosition: placePosition, closePositionCore: closePositionCore,
+    resolvePosition: resolvePosition, lastQuote: lastQuote, Paper: Paper,
+    _setState: function (s) { state = s; }, _getState: function () { return state; },
+    _setMarks: function (m) { liveMarks = m; } };
 }
