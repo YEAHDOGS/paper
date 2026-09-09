@@ -1,0 +1,1 @@
+{"name":"paper","private":true,"scripts":{"test":"node tests/math.test.js"}}
