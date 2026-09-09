@@ -63,14 +63,19 @@ function fmtSign(n) {
 
 var MARKETS = {
   crypto:     { name: "Crypto",      sides: ["Long", "Short"], priceLabel: "Entry price (USD)", live: true,
+                chips: ["BTC", "ETH", "SOL", "DOGE", "XRP"],
                 hint: "Live prices via CoinGecko — tap the bolt to fill. Anything else, type it manually." },
   stocks:     { name: "Stocks",      sides: ["Long", "Short"], priceLabel: "Entry price (USD)", live: false,
+                chips: ["NVDA", "TSLA", "AAPL", "SPY", "MSFT", "AMD"],
                 hint: "Manual quotes — check your broker app and type the price. Honest > fancy." },
   options:    { name: "Options",     sides: ["Call", "Put"],   priceLabel: "Premium per contract (USD)", live: false,
+                chips: ["NVDA", "TSLA", "AAPL", "SPY", "MSFT", "AMD"],
                 hint: "Paper simplification: calls act like longs, puts like shorts. Contracts × premium." },
   futures:    { name: "Futures",     sides: ["Long", "Short"],  priceLabel: "Entry price", live: false,
+                chips: ["ES", "NQ", "BTC", "ETH"],
                 hint: "Manual quotes. Qty = contracts, 1× — size it like the real thing." },
   prediction: { name: "Prediction",  sides: ["Yes", "No"],     priceLabel: "Price (0–100¢)", live: false,
+                chips: null,
                 hint: "Yes/No shares priced 0–100¢. Close by resolving: event happened → 100, didn't → 0." }
 };
 var MARKET_KEYS = Object.keys(MARKETS);
@@ -293,8 +298,9 @@ function renderTabs() {
   });
 }
 
-function renderAccount(k, s) {
-  var m = MARKETS[k], acct = state.accounts[k];
+function renderAccount(k, s, acct) {
+  var m = MARKETS[k];
+  acct = acct || state.accounts[k];
   var h = "";
   h += '<div class="card"><h2>BALANCE <span class="tag">· ' + m.name.toUpperCase() + "</span></h2>";
   h += '<div class="bal-row"><div class="cash mono ' + pnlCls(s.equity - acct.start) + '">' + fmt(s.equity) + "</div>";
@@ -306,7 +312,15 @@ function renderAccount(k, s) {
        " · Realized <span class=\"" + pnlCls(s.realized) + "\">" + fmtSign(s.realized) + "</span></div></div>";
 
   // ticket
-  h += '<div class="card"><h2>NEW POSITION</h2><div class="ticket">';
+  h += '<div class="card"><h2>NEW POSITION</h2>';
+  if (m.chips) {
+    h += '<div class="chips">';
+    m.chips.forEach(function (c) {
+      h += '<button class="chip" data-act="chip" data-m="' + k + '" data-sym="' + c + '">' + c + "</button>";
+    });
+    h += "</div>";
+  }
+  h += '<div class="ticket">';
   h += '<div class="field"><label>SYMBOL</label><input id="f-sym" placeholder="' + (k === "crypto" ? "BTC" : k === "stocks" ? "AAPL" : k === "options" ? "AAPL 10/17 200C" : k === "futures" ? "ES" : "Fed cuts in Oct?") + '"></div>';
   h += '<div class="field"><label>SIDE</label><select id="f-side">' + m.sides.map(function (x) { return "<option>" + x + "</option>"; }).join("") + "</select></div>";
   h += '<div class="field"><label>' + (k === "options" ? "CONTRACTS" : k === "prediction" ? "SHARES" : "QTY") + '</label><input id="f-qty" type="number" inputmode="decimal" placeholder="1"></div>';
@@ -376,6 +390,23 @@ function render() {
   bindActions(main);
 }
 
+function fillLivePrice(rerender) {
+  var symEl = document.getElementById("f-sym");
+  var sym = symEl.value.trim().toUpperCase();
+  var idc = cgId(sym);
+  var note = document.getElementById("live-note");
+  if (!idc) { if (note) note.textContent = "No live feed for " + (sym || "?") + " — enter manually."; return; }
+  if (note) note.textContent = "Fetching…";
+  fetchMarks([sym], function () {
+    var mk = liveMarks[idc];
+    var fEntry = document.getElementById("f-entry");
+    var note2 = document.getElementById("live-note");
+    if (mk) { if (fEntry) fEntry.value = mk.price; if (note2) note2.textContent = ""; }
+    else if (note2) note2.textContent = "Live price failed — enter manually.";
+    if (rerender) render();
+  });
+}
+
 function bindActions(root) {
   root.querySelectorAll("[data-act]").forEach(function (el) {
     var act = el.getAttribute("data-act");
@@ -394,18 +425,11 @@ function bindActions(root) {
       else if (act === "resetall") {
         if (confirm("Reset EVERYTHING? All accounts, history, and rules go back to defaults.")) { state = defaultState(); save(); render(); }
       }
-      else if (act === "liveprice") {
+      else if (act === "liveprice") fillLivePrice(true);
+      else if (act === "chip") {
         var symEl = document.getElementById("f-sym");
-        var sym = symEl.value.trim().toUpperCase();
-        var idc = cgId(sym);
-        if (!idc) { document.getElementById("live-note").textContent = "No live feed for " + (sym || "?") + " — enter manually."; return; }
-        document.getElementById("live-note").textContent = "Fetching…";
-        fetchMarks([sym], function () {
-          var mk = liveMarks[idc];
-          if (mk) { document.getElementById("f-entry").value = mk.price; document.getElementById("live-note").textContent = ""; }
-          else document.getElementById("live-note").textContent = "Live price failed — enter manually.";
-          render();
-        });
+        if (symEl) symEl.value = el.getAttribute("data-sym");
+        if (MARKETS[m] && MARKETS[m].live) fillLivePrice(false); // chip keeps the filled price (no re-render wipe)
       }
     });
     if (act === "togglerule") {
@@ -437,5 +461,6 @@ if (typeof document !== "undefined") {
 }
 
 if (typeof module !== "undefined") {
-  module.exports = { calcPnl: calcPnl, predPnl: predPnl, unrealized: unrealized, accountStats: accountStats, fmt: fmt, fmtSign: fmtSign };
+  module.exports = { calcPnl: calcPnl, predPnl: predPnl, unrealized: unrealized, accountStats: accountStats, fmt: fmt, fmtSign: fmtSign,
+    MARKETS: MARKETS, COINGECKO_IDS: COINGECKO_IDS, renderAccount: renderAccount };
 }
