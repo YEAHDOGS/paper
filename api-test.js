@@ -21,7 +21,7 @@ ok(P.Paper.positions("crypto").length === 1, "position shows up in Paper.positio
 throws(function () { P.Paper.place({ account: "crypto", symbol: "BTC", side: "long", qty: 1 }); }, "place w/o price and no quote throws");
 
 // seed a quote, place without price -> uses cache
-P._setMarks({ bitcoin: { price: 61000, ts: Date.now() } });
+P._setMarks({ "crypto:BTC": { price: 61000, ts: Date.now() } });
 var pos2 = P.Paper.place({ account: "crypto", symbol: "BTC", side: "short", qty: 1 });
 ok(pos2.entry === 61000, "place uses cached quote when price omitted");
 
@@ -38,7 +38,7 @@ ok(P.Paper.accounts()[0].realized === 1000, "account realized updated");
 
 // close without exit price -> uses cached quote: long 2 ETH @ 3000, quote 3100 -> +200
 var pos3 = P.Paper.place({ account: "crypto", symbol: "ETH", side: "long", qty: 2, price: 3000 });
-P._setMarks({ bitcoin: { price: 61000, ts: Date.now() }, ethereum: { price: 3100, ts: Date.now() } });
+P._setMarks({ "crypto:BTC": { price: 61000, ts: Date.now() }, "crypto:ETH": { price: 3100, ts: Date.now() } });
 var rec2 = P.Paper.close("crypto", pos3.id);
 ok(rec2.pnl === 200, "close w/o exit uses cached quote (long +200)");
 
@@ -63,7 +63,7 @@ var or = P.Paper.close("options", op.id, 7);
 ok(or.pnl === 4, "call 2 @ 5 -> 7 = +4");
 
 // positions carry live unrealized: long 0.5 BTC @ 60000, mark 62000 -> +1000
-P._setMarks({ bitcoin: { price: 62000, ts: Date.now() } });
+P._setMarks({ "crypto:BTC": { price: 62000, ts: Date.now() } });
 var ups = P.Paper.positions("crypto");
 var btc = ups.filter(function (p) { return p.symbol === "BTC"; })[0];
 ok(btc && btc.unrealized === 1000 && btc.mark === 62000, "positions carry live mark + unrealized P&L");

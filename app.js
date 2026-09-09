@@ -65,15 +65,15 @@ var MARKETS = {
   crypto:     { name: "Crypto",      sides: ["Long", "Short"], priceLabel: "Entry price (USD)", live: true,
                 chips: ["BTC", "ETH", "SOL", "DOGE", "XRP"],
                 hint: "Live prices via CoinGecko — tap the bolt to fill. Anything else, type it manually." },
-  stocks:     { name: "Stocks",      sides: ["Long", "Short"], priceLabel: "Entry price (USD)", live: false,
+  stocks:     { name: "Stocks",      sides: ["Long", "Short"], priceLabel: "Entry price (USD)", live: false, keyLive: true,
                 chips: ["NVDA", "TSLA", "AAPL", "SPY", "MSFT", "AMD"],
-                hint: "Manual quotes — check your broker app and type the price. Honest > fancy." },
+                hint: "Live stock quotes need your free Finnhub key — set it in Rules → Data Feeds. Until then, manual quotes. Honest > fancy." },
   options:    { name: "Options",     sides: ["Call", "Put"],   priceLabel: "Premium per contract (USD)", live: false,
                 chips: ["NVDA", "TSLA", "AAPL", "SPY", "MSFT", "AMD"],
-                hint: "Paper simplification: calls act like longs, puts like shorts. Contracts × premium." },
+                hint: "Paper simplification: calls act like longs, puts like shorts. Contracts × premium. No free options-chain API exists without a key — premium entry stays manual." },
   futures:    { name: "Futures",     sides: ["Long", "Short"],  priceLabel: "Entry price", live: false,
                 chips: ["ES", "NQ", "BTC", "ETH"],
-                hint: "Manual quotes. Qty = contracts, 1× — size it like the real thing." },
+                hint: "Manual quotes — no reliable free futures feed. Qty = contracts, 1× — size it like the real thing." },
   prediction: { name: "Prediction",  sides: ["Yes", "No"],     priceLabel: "Price (0–100¢)", live: false,
                 chips: null,
                 hint: "Yes/No shares priced 0–100¢. Close by resolving: event happened → 100, didn't → 0." }
@@ -101,25 +101,59 @@ var DEFAULT_RULES = [
 var LS_KEY = "paper-trading-v1";
 var state = null;
 var activeTab = "crypto";
-var liveMarks = {};   // symbol -> {price, ts}
-var liveErr = "";
+var liveMarks = {};   // "market:SYMBOL" -> {price, ts, feed}
+var liveErr = "";     // crypto feed error note
+var stockErr = "";    // stock feed error note
+var lastCryptoTs = 0, lastStockTs = 0;
 
 function defaultState() {
   var accounts = {};
   MARKET_KEYS.forEach(function (k) {
     accounts[k] = { start: 10000, cash: 10000, positions: [], history: [] };
   });
-  return { accounts: accounts, rules: DEFAULT_RULES.map(function (t) { return { text: t, done: false }; }) };
+  return { accounts: accounts, rules: DEFAULT_RULES.map(function (t) { return { text: t, done: false }; }),
+           keys: { finnhub: "", twelve: "" } };
 }
 function load() {
   try {
     var raw = localStorage.getItem(LS_KEY);
-    if (raw) { state = JSON.parse(raw); return; }
+    if (raw) {
+      state = JSON.parse(raw);
+      if (!state.keys) state.keys = { finnhub: "", twelve: "" }; // migrate old saves
+      return;
+    }
   } catch (e) {}
   state = defaultState();
 }
 function save() {
   try { localStorage.setItem(LS_KEY, JSON.stringify(state)); } catch (e) {}
+}
+
+/* ---------------- quote providers (pure, node-testable) ----------------
+   Stooq's free quote endpoint died in 2026 (404s every symbol), so there is
+   no reliable keyless stock feed left. Stocks go live via the user's own
+   free-tier API key — Finnhub first (60 req/min), Twelve Data as backup. */
+
+function finnhubQuoteUrl(sym, key) {
+  return "https://finnhub.io/api/v1/quote?symbol=" + encodeURIComponent(sym) + "&token=" + encodeURIComponent(key);
+}
+function parseFinnhubQuote(j) {
+  // {"c":182.9,"d":1.2,"dp":0.66,"h":183.5,"l":181.1,"o":182.0,"pc":181.7,"t":...}
+  return (j && typeof j.c === "number" && j.c > 0) ? j.c : null;
+}
+function twelveQuoteUrl(sym, key) {
+  return "https://api.twelvedata.com/price?symbol=" + encodeURIComponent(sym) + "&apikey=" + encodeURIComponent(key);
+}
+function parseTwelveQuote(j) {
+  // {"price":"182.90"}
+  var p = j ? parseFloat(j.price) : NaN;
+  return (p > 0) ? p : null;
+}
+function stockProvider(keys) {
+  // 'finnhub' | 'twelve' | null — Finnhub preferred when both keys exist.
+  if (keys && keys.finnhub) return "finnhub";
+  if (keys && keys.twelve) return "twelve";
+  return null;
 }
 
 /* ---------------- live crypto prices ---------------- */
@@ -134,33 +168,68 @@ function fetchMarks(symbols, cb) {
   if (!ids.length) { if (cb) cb(); return; }
   var now = Date.now();
   var fresh = ids.filter(function (id) {
-    return !(liveMarks[id] && now - liveMarks[id].ts < 60000);
+    var k = "crypto:" + id;
+    return !(liveMarks[k] && now - liveMarks[k].ts < 60000);
   });
   if (!fresh.length) { if (cb) cb(); return; }
   fetch("https://api.coingecko.com/api/v3/simple/price?ids=" + fresh.join(",") + "&vs_currencies=usd")
     .then(function (r) { if (!r.ok) throw new Error("http " + r.status); return r.json(); })
     .then(function (j) {
       fresh.forEach(function (id) {
-        if (j[id] && typeof j[id].usd === "number") liveMarks[id] = { price: j[id].usd, ts: now };
+        if (j[id] && typeof j[id].usd === "number") liveMarks["crypto:" + id] = { price: j[id].usd, ts: now, feed: "coingecko" };
       });
       liveErr = "";
+      lastCryptoTs = now;
       if (cb) cb();
     })
     .catch(function () { liveErr = "live prices unavailable — manual entry it is"; if (cb) cb(); });
 }
+
+function fetchStockMarks(symbols, cb) {
+  var prov = stockProvider(state.keys || {});
+  if (!prov || !symbols.length) { if (cb) cb(); return; }
+  var now = Date.now();
+  var fresh = symbols.filter(function (s) {
+    var k = "stocks:" + s;
+    return !(liveMarks[k] && now - liveMarks[k].ts < 60000);
+  });
+  if (prov === "twelve") fresh = fresh.slice(0, 8); // Twelve free tier: 8 req/min
+  if (!fresh.length) { if (cb) cb(); return; }
+  var key = prov === "finnhub" ? state.keys.finnhub : state.keys.twelve;
+  var jobs = fresh.map(function (s) {
+    var url = prov === "finnhub" ? finnhubQuoteUrl(s, key) : twelveQuoteUrl(s, key);
+    return fetch(url)
+      .then(function (r) { if (!r.ok) throw new Error("http " + r.status); return r.json(); })
+      .then(function (j) {
+        var p = prov === "finnhub" ? parseFinnhubQuote(j) : parseTwelveQuote(j);
+        if (p !== null) liveMarks["stocks:" + s] = { price: p, ts: now, feed: prov };
+      })
+      .catch(function () {});
+  });
+  Promise.all(jobs).then(function () {
+    stockErr = "";
+    lastStockTs = now;
+    if (cb) cb();
+  }).catch(function () {
+    stockErr = "stock quotes unavailable — check your key or enter manually";
+    if (cb) cb();
+  });
+}
+
 function markFor(pos) {
-  if (pos.market !== "crypto") return pos.entry;
-  var id = cgId(pos.symbol);
-  if (id && liveMarks[id]) return liveMarks[id].price;
+  var k = pos.market + ":" + pos.symbol;
+  if ((pos.market === "crypto" || pos.market === "stocks") && liveMarks[k]) return liveMarks[k].price;
   return pos.entry;
 }
-function lastQuote(sym) {
-  // Last known quote for any symbol, or null. Sync — trains read the cache.
+function lastQuote(sym, market) {
+  // Last known quote for a symbol, or null. Sync — trains read the cache.
+  // market optional: "crypto" | "stocks" | "futures" — checked in that order when omitted.
   var s = String(sym).trim().toUpperCase();
-  var m = liveMarks[s]; // symbol-keyed marks (stock/futures feeds)
-  if (m && typeof m.price === "number") return { price: m.price, ts: m.ts };
-  var id = cgId(s); // crypto marks are keyed by CoinGecko id
-  if (id && liveMarks[id]) return { price: liveMarks[id].price, ts: liveMarks[id].ts };
+  var order = market ? [market] : ["crypto", "stocks", "futures"];
+  for (var i = 0; i < order.length; i++) {
+    var m = liveMarks[order[i] + ":" + s];
+    if (m && typeof m.price === "number") return { price: m.price, ts: m.ts, feed: m.feed };
+  }
   return null;
 }
 
@@ -252,6 +321,20 @@ function setStart(market) {
   var acct = state.accounts[market];
   var diff = v - acct.start;
   acct.start = v; acct.cash += diff;
+  save(); render();
+}
+
+function saveKeys() {
+  var f = document.getElementById("key-finnhub"), t = document.getElementById("key-twelve");
+  state.keys = {
+    finnhub: f ? f.value.trim() : "",
+    twelve: t ? t.value.trim() : ""
+  };
+  save(); render();
+}
+function clearKeys() {
+  if (!confirm("Remove both API keys from this device?")) return;
+  state.keys = { finnhub: "", twelve: "" };
   save(); render();
 }
 
@@ -387,12 +470,26 @@ function allStats() {
   return { per: per, total: total };
 }
 
+function clock(ts) {
+  return new Date(ts).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+}
+function feedLine() {
+  var parts = [];
+  parts.push("CRYPTO " + (lastCryptoTs ? '<span class="on">● LIVE ' + clock(lastCryptoTs) + "</span> (CoinGecko)" : "○ —"));
+  var prov = stockProvider(state.keys || {});
+  if (prov) parts.push("STOCKS " + (lastStockTs ? '<span class="on">● LIVE ' + clock(lastStockTs) + "</span> (your " + prov + " key)" : '<span class="on">●</span> connecting…'));
+  else parts.push('STOCKS ○ manual — <span style="color:var(--gold)">add a free key in Rules → Data Feeds</span>');
+  return parts.join(" &nbsp;·&nbsp; ");
+}
+
 function renderHeader(t) {
   document.getElementById("totalEquity").innerHTML = fmt(t.equity).replace(/(\.\d\d)$/, "<small>$1</small>");
   var p = document.getElementById("statPnl");
   p.textContent = fmtSign(t.realized); p.className = "v mono " + pnlCls(t.realized);
   document.getElementById("statWin").textContent = t.trades ? Math.round(100 * t.wins / t.trades) + "%" : "—";
   document.getElementById("statOpen").textContent = t.open;
+  var fi = document.getElementById("live-ind");
+  if (fi) fi.innerHTML = feedLine();
 }
 
 function renderTabs() {
@@ -436,9 +533,12 @@ function renderAccount(k, s, acct) {
   h += '<div class="field"><label>SIDE</label><select id="f-side">' + m.sides.map(function (x) { return "<option>" + x + "</option>"; }).join("") + "</select></div>";
   h += '<div class="field"><label>' + (k === "options" ? "CONTRACTS" : k === "prediction" ? "SHARES" : "QTY") + '</label><input id="f-qty" type="number" inputmode="decimal" placeholder="1"></div>';
   h += '<div class="field"><label>' + m.priceLabel.toUpperCase() + '</label><div class="live-row"><input id="f-entry" type="number" inputmode="decimal" placeholder="0.00">';
-  if (m.live) h += '<button class="mini goldbtn" data-act="liveprice" title="Fill live price">⚡</button>';
+  if (m.live || m.keyLive) h += '<button class="mini goldbtn" data-act="liveprice" title="Fill live price">⚡</button>';
   h += "</div></div>";
-  if (m.live) h += '<div class="field full"><div class="live-price' + (liveErr ? " err" : "") + '" id="live-note">' + (liveErr ? esc(liveErr) : "") + "</div></div>";
+  if (m.live || m.keyLive) {
+    var noteTxt = liveErr && k === "crypto" ? esc(liveErr) : (stockErr && k === "stocks" ? esc(stockErr) : "");
+    h += '<div class="field full"><div class="live-price' + (noteTxt ? " err" : "") + '" id="live-note">' + noteTxt + "</div></div>";
+  }
   h += '<button class="open-btn" data-act="open" data-m="' + k + '">OPEN POSITION</button>';
   h += '<div class="field full" style="font-size:12px;color:var(--faint)">' + esc(m.hint) + "</div>";
   h += "</div></div>";
@@ -451,7 +551,7 @@ function renderAccount(k, s, acct) {
     var u = unrealized(p, mk);
     h += '<div class="pos-row"><div class="pos-top"><span class="pos-sym">' + esc(p.symbol) + '</span><span class="side ' + p.side.toLowerCase() + '">' + esc(p.side.toUpperCase()) + "</span></div>";
     h += '<div class="pos-meta mono">' + p.qty + " @ " + fmt(p.entry);
-    if (k === "crypto" && mk !== p.entry) h += " · now " + fmt(mk);
+    if ((k === "crypto" || k === "stocks") && mk !== p.entry) h += " · now " + fmt(mk);
     h += ' · <span class="' + pnlCls(u) + '">' + fmtSign(u) + "</span></div>";
     if (k === "prediction") {
       h += '<div class="close-row"><button class="close-btn resolve-yes" data-act="resolve-yes" data-m="' + k + '" data-id="' + p.id + '">YES happened</button>' +
@@ -485,6 +585,15 @@ function renderRules() {
   });
   h += '<div class="rule-add"><input id="rule-text" placeholder="New rule…"><button class="mini goldbtn" data-act="addrule">Add</button></div></div>';
 
+  h += '<div class="card"><h2>DATA FEEDS <span class="tag">· YOUR KEYS, YOUR DEVICE</span></h2>';
+  h += '<div class="field"><label>FINNHUB API KEY (free tier · 60/min · US stocks)</label>' +
+       '<input id="key-finnhub" type="password" autocomplete="off" spellcheck="false" placeholder="paste key" value="' + esc((state.keys || {}).finnhub || "") + '"></div>';
+  h += '<div class="field"><label>TWELVE DATA API KEY (free tier · 8/min · backup)</label>' +
+       '<input id="key-twelve" type="password" autocomplete="off" spellcheck="false" placeholder="paste key" value="' + esc((state.keys || {}).twelve || "") + '"></div>';
+  h += '<div class="tools"><button class="mini goldbtn" data-act="savekeys">Save keys</button>' +
+       '<button class="mini danger" data-act="clearkeys">Remove keys</button></div>';
+  h += '<div style="font-size:12px;color:var(--faint);margin-top:8px">Keys live only in this device\u2019s localStorage — never in the repo, sent only to the provider\u2019s own API. They ride along in JSON backups you export. Free keys: finnhub.io · twelvedata.com. No key? Stocks stay manual — no shame in it.</div></div>';
+
   h += '<div class="card"><h2>BACKUP</h2><div class="tools">' +
        '<button class="mini" data-act="export">Export JSON</button>' +
        '<label class="mini" style="cursor:pointer">Import JSON<input type="file" id="import-file" accept=".json" class="hidden"></label>' +
@@ -504,18 +613,33 @@ function render() {
 function fillLivePrice(rerender) {
   var symEl = document.getElementById("f-sym");
   var sym = symEl.value.trim().toUpperCase();
-  var idc = cgId(sym);
   var note = document.getElementById("live-note");
-  if (!idc) { if (note) note.textContent = "No live feed for " + (sym || "?") + " — enter manually."; return; }
-  if (note) note.textContent = "Fetching…";
-  fetchMarks([sym], function () {
-    var mk = liveMarks[idc];
-    var fEntry = document.getElementById("f-entry");
-    var note2 = document.getElementById("live-note");
-    if (mk) { if (fEntry) fEntry.value = mk.price; if (note2) note2.textContent = ""; }
-    else if (note2) note2.textContent = "Live price failed — enter manually.";
-    if (rerender) render();
-  });
+  if (activeTab === "crypto") {
+    var idc = cgId(sym);
+    if (!idc) { if (note) note.textContent = "No live feed for " + (sym || "?") + " — enter manually."; return; }
+    if (note) note.textContent = "Fetching…";
+    fetchMarks([sym], function () {
+      var mk = liveMarks["crypto:" + idc];
+      var fEntry = document.getElementById("f-entry");
+      var note2 = document.getElementById("live-note");
+      if (mk) { if (fEntry) fEntry.value = mk.price; if (note2) note2.textContent = ""; }
+      else if (note2) note2.textContent = "Live price failed — enter manually.";
+      if (rerender) render();
+    });
+  } else if (activeTab === "stocks") {
+    var prov = stockProvider(state.keys || {});
+    if (!prov) { if (note) note.textContent = "Add your free Finnhub key in Rules → Data Feeds for live stock quotes."; return; }
+    if (!sym) { if (note) note.textContent = "Enter a symbol first."; return; }
+    if (note) note.textContent = "Fetching…";
+    fetchStockMarks([sym], function () {
+      var mk = liveMarks["stocks:" + sym];
+      var fEntry = document.getElementById("f-entry");
+      var note2 = document.getElementById("live-note");
+      if (mk) { if (fEntry) fEntry.value = mk.price; if (note2) note2.textContent = ""; }
+      else if (note2) note2.textContent = stockErr || "Quote failed — enter manually.";
+      if (rerender) render();
+    });
+  }
 }
 
 function bindActions(root) {
@@ -533,6 +657,8 @@ function bindActions(root) {
       else if (act === "delrule") delRule(parseInt(i, 10));
       else if (act === "addrule") addRule();
       else if (act === "export") exportJSON();
+      else if (act === "savekeys") saveKeys();
+      else if (act === "clearkeys") clearKeys();
       else if (act === "resetall") {
         if (confirm("Reset EVERYTHING? All accounts, history, and rules go back to defaults.")) { state = defaultState(); save(); render(); }
       }
@@ -541,6 +667,7 @@ function bindActions(root) {
         var symEl = document.getElementById("f-sym");
         if (symEl) symEl.value = el.getAttribute("data-sym");
         if (MARKETS[m] && MARKETS[m].live) fillLivePrice(false); // chip keeps the filled price (no re-render wipe)
+        if (m === "stocks" && stockProvider(state.keys || {})) fillLivePrice(false);
       }
     });
     if (act === "togglerule") {
@@ -557,11 +684,16 @@ function bindActions(root) {
 /* ---------------- init ---------------- */
 
 function refreshLiveMarks() {
-  var syms = [];
+  var cryptoSyms = [], stockSyms = [];
   MARKET_KEYS.forEach(function (k) {
-    state.accounts[k].positions.forEach(function (p) { if (p.market === "crypto" && cgId(p.symbol)) syms.push(p.symbol); });
+    state.accounts[k].positions.forEach(function (p) {
+      if (p.market === "crypto" && cgId(p.symbol)) cryptoSyms.push(p.symbol);
+      if (p.market === "stocks") stockSyms.push(p.symbol);
+    });
   });
-  if (syms.length) fetchMarks(syms, render);
+  var done = function () { render(); };
+  var step2 = function () { stockSyms.length ? fetchStockMarks(stockSyms, done) : done(); };
+  cryptoSyms.length ? fetchMarks(cryptoSyms, step2) : step2();
 }
 
 if (typeof document !== "undefined") {
@@ -577,6 +709,8 @@ if (typeof module !== "undefined") {
     MARKETS: MARKETS, COINGECKO_IDS: COINGECKO_IDS, renderAccount: renderAccount,
     defaultState: defaultState, placePosition: placePosition, closePositionCore: closePositionCore,
     resolvePosition: resolvePosition, lastQuote: lastQuote, Paper: Paper,
+    markFor: markFor, finnhubQuoteUrl: finnhubQuoteUrl, parseFinnhubQuote: parseFinnhubQuote,
+    twelveQuoteUrl: twelveQuoteUrl, parseTwelveQuote: parseTwelveQuote, stockProvider: stockProvider,
     _setState: function (s) { state = s; }, _getState: function () { return state; },
     _setMarks: function (m) { liveMarks = m; } };
 }

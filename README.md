@@ -10,10 +10,23 @@ Open the GitHub Pages URL (or any static host) on your phone.
 Everything is stored in your device's `localStorage` — nothing leaves your browser.
 
 - **New position:** pick a tab, fill the ticket (symbol, side, qty, price), hit OPEN POSITION.
-- **Crypto:** tap the ⚡ bolt to fill the live CoinGecko price. Everything else is manual quotes — type them from your broker app.
+- **Crypto:** tap the ⚡ bolt to fill the live CoinGecko price. Anything else, type it manually.
+- **Stocks:** tap the ⚡ bolt for a live quote — needs your free API key first (see Data Feeds). Without a key, manual quotes.
 - **Close:** enter an exit price per position. Prediction markets close by resolving YES (pays 100) or NO (pays 0).
-- **Options (paper simplification):** calls behave like longs, puts like shorts. Contracts × premium.
+- **Options (paper simplification):** calls behave like longs, puts like shorts. Contracts × premium. No free options-chain API exists without a key — premium entry stays manual.
 - **Rules tab:** your guardrails checklist — read it before every session. Add your own.
+
+## Data Feeds
+
+| Asset | Feed | Notes |
+|---|---|---|
+| Crypto | CoinGecko (no key) | Live-ish, auto-refreshes every 60s |
+| Stocks | **Your** Finnhub key (free, 60/min) or Twelve Data key (free, 8/min) | Set it in Rules → Data Feeds. Key lives only in your device's localStorage, sent only to that provider's API. |
+| Futures | Manual | No reliable free futures feed exists |
+| Options | Manual | No free options-chain API without a key |
+| Prediction | Manual | Marked at cost until you resolve |
+
+Stooq's free quote endpoint died in 2026 (404s every symbol) — there is no keyless stock feed left, hence the bring-your-own-key design. Honest > fancy.
 - **Backup:** export/import JSON in the Rules tab before switching devices.
 
 ## The one rule

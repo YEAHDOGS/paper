@@ -125,3 +125,5 @@ input:focus,select:focus{border-color:var(--gold)}
 .tools{display:flex;gap:8px;flex-wrap:wrap}
 .foot{max-width:720px;margin:26px auto 0;padding:0 14px;color:var(--faint);font-size:12px;line-height:1.7;text-align:center}
 .hidden{display:none!important}
+.feedline{font-size:11px;color:var(--faint);text-align:center;margin-top:10px;letter-spacing:.4px;line-height:1.6;padding:0 12px}
+.feedline .on{color:var(--green);font-weight:700}
