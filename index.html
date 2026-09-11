@@ -4,35 +4,178 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>PAPER — Fake money. Real lessons.</title>
-<link rel="stylesheet" href="styles.css">
+<meta name="description" content="PAPER is a paper-trading simulator: five fake-money accounts across crypto, stocks, options, futures, and prediction markets. No signup, nothing leaves your device.">
+<meta property="og:title" content="PAPER — Fake money. Real lessons.">
+<meta property="og:description" content="A paper-trading simulator. Five accounts, zero real money, nothing leaves your device.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://yeahdogs.github.io/paper/">
+<meta property="og:image" content="https://yeahdogs.github.io/paper/og-image.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'none'">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="favicon.svg">
+<style>
+:root{
+  --bg:#0e100d; --ink:#f2efe3; --muted:#8f8b7c; --line:#23261f;
+  --green:#9ee870; --green-dim:#3c4a2e;
+  --serif:Georgia,"Iowan Old Style","Times New Roman",serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{background:var(--bg);scroll-behavior:smooth}
+html.no-motion{scroll-behavior:auto}
+body{background:var(--bg);color:var(--ink);font-family:var(--serif);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+.mono{font-family:var(--mono)}
+::selection{background:var(--green);color:#0e100d}
+
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
+.topbar .mono{font-size:11px;letter-spacing:.14em;color:var(--muted)}
+.topbar a.mono{color:var(--ink);text-decoration:none;border:1px solid var(--line);padding:8px 12px}
+.topbar a.mono:hover{border-color:var(--green);color:var(--green)}
+
+.hero{padding:64px 18px 40px;max-width:760px;margin:0 auto}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.22em;color:var(--green);margin-bottom:18px}
+.hero h1{font-size:clamp(84px,26vw,220px);line-height:.9;font-weight:400;letter-spacing:-.02em}
+.hero h1 .period{color:var(--green)}
+.lede{font-size:clamp(22px,5.6vw,34px);line-height:1.25;margin-top:14px;max-width:22ch}
+.lede em{font-style:italic;color:var(--green)}
+.cta-row{margin-top:28px;display:flex;gap:12px;flex-wrap:wrap}
+.btn{font-family:var(--mono);font-size:14px;letter-spacing:.06em;text-decoration:none;display:inline-block;padding:15px 26px;background:var(--green);color:#0e100d;border:none;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn:hover{background:#7cd14f}.btn.ghost:hover{border-color:var(--green);color:var(--green)}
+.hero .mono.fine{margin-top:20px;font-size:11px;letter-spacing:.1em;color:var(--muted);line-height:1.8}
+
+.ticker{border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden;white-space:nowrap;padding:12px 0;background:#0b0d0a}
+.ticker .track{display:inline-block;will-change:transform;animation:tick 28s linear infinite}
+.ticker span{font-family:var(--mono);font-size:12px;letter-spacing:.18em;color:var(--muted);padding:0 22px}
+.ticker span b{color:var(--green);font-weight:400}
+@keyframes tick{to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion:reduce){.ticker .track{animation:none}}
+
+section{padding:64px 18px;max-width:760px;margin:0 auto}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.22em;color:var(--muted);margin-bottom:28px}
+.acct{display:grid;grid-template-columns:44px 1fr;gap:6px 14px;padding:20px 0;border-top:1px solid var(--line);align-items:baseline}
+.acct:last-of-type{border-bottom:1px solid var(--line)}
+.acct .n{font-family:var(--mono);font-size:12px;color:var(--green)}
+.acct h3{font-size:26px;font-weight:400;letter-spacing:-.01em}
+.acct p{grid-column:2;font-family:var(--mono);font-size:12.5px;line-height:1.7;color:var(--muted);max-width:44ch;margin-top:6px}
+.acct:nth-of-type(even){padding-left:34px}
+
+.rule-quote{padding:64px 18px;text-align:center;max-width:640px;margin:0 auto}
+.rule-quote blockquote{font-size:clamp(26px,6.4vw,40px);line-height:1.3;font-style:italic}
+.rule-quote blockquote strong{font-style:normal;color:var(--green);font-weight:400}
+.rule-quote .mono{display:block;margin-top:18px;font-size:11px;letter-spacing:.2em;color:var(--muted)}
+
+.feed{font-family:var(--mono);font-size:12.5px;line-height:2;color:var(--muted);max-width:640px}
+.feed b{color:var(--ink);font-weight:400}
+.feed .ok{color:var(--green)}
+
+.faq details{border-top:1px solid var(--line);padding:16px 0}
+.faq details:last-child{border-bottom:1px solid var(--line)}
+.faq summary{font-size:19px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:12px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary .plus{font-family:var(--mono);color:var(--green);flex-shrink:0}
+.faq p{font-family:var(--mono);font-size:13px;line-height:1.8;color:var(--muted);margin-top:10px;max-width:52ch}
+
+footer{border-top:1px solid var(--line);padding:32px 18px 110px;max-width:760px;margin:0 auto}
+footer nav{display:flex;gap:22px;flex-wrap:wrap;margin-bottom:22px}
+footer nav a{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--muted);text-decoration:none}
+footer nav a:hover{color:var(--green)}
+footer .made{font-family:var(--mono);font-size:12px;color:var(--muted)}
+footer .made a{color:var(--green);text-decoration:none}
+
+.sticky-cta{display:none}
+@media (max-width:520px){
+  .sticky-cta{display:block;position:fixed;left:0;right:0;bottom:0;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:rgba(14,16,13,.94);border-top:1px solid var(--line);z-index:50}
+  .sticky-cta .btn{width:100%;text-align:center}
+}
+
+.js .rv{opacity:0;transform:translateY(18px)}
+.js .rv.in{opacity:1;transform:none;transition:opacity .7s ease,transform .7s cubic-bezier(.22,1,.36,1)}
+.no-motion .rv,.no-motion.js .rv{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.js .rv{opacity:1;transform:none}}
+</style>
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+{"@type":"Question","name":"Is PAPER real money?","acceptedAnswer":{"@type":"Answer","text":"No. PAPER is a simulator. No real money moves, nothing here is financial advice, and nothing is a real order."}},
+{"@type":"Question","name":"Do I need an account or a login?","acceptedAnswer":{"@type":"Answer","text":"No. Open the page and trade. Your positions live in your device's localStorage and never leave your browser."}},
+{"@type":"Question","name":"Where does my data go?","acceptedAnswer":{"@type":"Answer","text":"Nowhere. PAPER has no backend. Export a JSON backup from the Rules tab before switching devices."}},
+{"@type":"Question","name":"Which price feeds are live?","acceptedAnswer":{"@type":"Answer","text":"Crypto quotes come from CoinGecko, no key needed. Stocks need your own free Finnhub or Twelve Data key. Futures, options, and prediction markets are manual entry."}},
+{"@type":"Question","name":"Can I drive PAPER with code?","acceptedAnswer":{"@type":"Answer","text":"Yes. The page exposes a window.Paper API (accounts, positions, trades, place, close, quote) for paper-only bots. Closing the tab stops them."}}]}
+</script>
 </head>
 <body>
-<div class="paper-banner"><span>PAPER — FAKE MONEY · REAL LESSONS</span></div>
+<script>document.documentElement.classList.add('js');if(matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.classList.add('no-motion');</script>
 
-<header>
-  <div class="brand">
-    <h1><b>PAPER</b> TRADING</h1>
-    <div style="text-align:right">
-      <div class="equity-label">TOTAL EQUITY</div>
-      <div class="equity mono" id="totalEquity">$0<small>.00</small></div>
-    </div>
-  </div>
-  <div class="stats">
-    <div class="stat"><div class="k">TOTAL P&amp;L</div><div class="v mono" id="statPnl">$0</div></div>
-    <div class="stat"><div class="k">WIN RATE</div><div class="v mono" id="statWin">—</div></div>
-    <div class="stat"><div class="k">OPEN</div><div class="v mono gold" id="statOpen">0</div></div>
-  </div>
-  <div class="feedline mono" id="live-ind"></div>
-</header>
-
-<nav class="tabs" id="tabs"></nav>
-<main id="main"></main>
-
-<div class="foot">
-  PAPER is a simulator. Nothing here is real money, real advice, or a real order.<br>
-  Data lives in this device's localStorage. Export a backup before switching devices.
+<div class="topbar">
+  <span class="mono">DOGS / TRADING SIM</span>
+  <a class="mono" href="app.html">OPEN THE APP</a>
 </div>
 
-<script src="app.js"></script>
+<header class="hero">
+  <div class="eyebrow rv">PAPER-TRADING SIMULATOR</div>
+  <h1 class="rv">PAPER<span class="period">.</span></h1>
+  <p class="lede rv">Fake money. <em>Real lessons.</em></p>
+  <div class="cta-row rv">
+    <a class="btn" href="app.html">OPEN THE APP</a>
+    <a class="btn ghost" href="#accounts">WHAT IT TRADES</a>
+  </div>
+  <p class="mono fine rv">FIVE PAPER ACCOUNTS · NO SIGNUP · NOTHING LEAVES THIS DEVICE<br>NOT FINANCIAL ADVICE. NOT REAL ORDERS.</p>
+</header>
+
+<div class="ticker" aria-hidden="true"><div class="track" id="tickerTrack">
+<span>CRYPTO <b>·</b></span><span>STOCKS <b>·</b></span><span>OPTIONS <b>·</b></span><span>FUTURES <b>·</b></span><span>PREDICTION MARKETS <b>·</b></span><span>PAPER ONLY <b>·</b></span><span>CRYPTO <b>·</b></span><span>STOCKS <b>·</b></span><span>OPTIONS <b>·</b></span><span>FUTURES <b>·</b></span><span>PREDICTION MARKETS <b>·</b></span><span>PAPER ONLY <b>·</b></span>
+</div></div>
+
+<section id="accounts">
+  <div class="kicker rv">01 — FIVE ACCOUNTS, ONE PAGE</div>
+  <div class="acct rv"><span class="n">01</span><h3>Crypto</h3><p>Live CoinGecko quotes, refreshed every 60 seconds. Tap the bolt, it fills the price. No key needed.</p></div>
+  <div class="acct rv"><span class="n">02</span><h3>Stocks</h3><p>Bring your own free Finnhub or Twelve Data key, stored only on your device. Without one, type quotes by hand.</p></div>
+  <div class="acct rv"><span class="n">03</span><h3>Options</h3><p>Paper simplification: calls trade like longs, puts like shorts. Contracts times premium, manual entry.</p></div>
+  <div class="acct rv"><span class="n">04</span><h3>Futures</h3><p>No free feed exists, so none is faked. You type the price, PAPER does the math.</p></div>
+  <div class="acct rv"><span class="n">05</span><h3>Prediction markets</h3><p>Marked at cost until you resolve them. YES pays 100, NO pays 0. Simple.</p></div>
+</section>
+
+<div class="rule-quote rv">
+  <blockquote>Paper stays paper until <strong>60 days green</strong>. Then we talk.</blockquote>
+  <span class="mono">THE ONE RULE</span>
+</div>
+
+<section>
+  <div class="kicker rv">02 — BOTS WELCOME</div>
+  <p class="feed rv">Open devtools on the app and drive it with <b>window.Paper</b>: accounts, positions, trades, place, close, quote. Same engine as the UI, same localStorage. Paper only, fake money, always. Trains die when the tab closes.</p>
+</section>
+
+<section class="faq">
+  <div class="kicker rv">03 — QUESTIONS</div>
+  <details class="rv"><summary>Is this real money?<span class="plus">+</span></summary><p>No. PAPER is a simulator. No real money moves, nothing here is financial advice, and nothing is a real order.</p></details>
+  <details class="rv"><summary>Do I need an account?<span class="plus">+</span></summary><p>No login, no signup. Open the page and trade. Positions live in your device's localStorage.</p></details>
+  <details class="rv"><summary>Where does my data go?<span class="plus">+</span></summary><p>Nowhere. There is no backend. Export a JSON backup from the Rules tab before switching devices.</p></details>
+  <details class="rv"><summary>Which feeds are live?<span class="plus">+</span></summary><p>Crypto: CoinGecko, keyless, 60s refresh. Stocks: your free Finnhub or Twelve Data key. Futures, options, prediction: manual.</p></details>
+  <details class="rv"><summary>Can I trade with code?<span class="plus">+</span></summary><p>Yes. The app exposes a window.Paper API for paper-only bots. Close the tab and they stop.</p></details>
+</section>
+
+<footer>
+  <nav>
+    <a href="app.html">Open the app</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+    <a href="sitemap.xml">Sitemap</a>
+  </nav>
+  <p class="made">This product was made by <a href="https://wearedogs.net">DOGS</a>.</p>
+</footer>
+
+<div class="sticky-cta"><a class="btn" href="app.html">OPEN THE APP</a></div>
+
+<script>
+(function(){
+  if(document.documentElement.classList.contains('no-motion'))return;
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});
+  },{threshold:.12,rootMargin:'0px 0px -8% 0px'});
+  document.querySelectorAll('.rv').forEach(function(el){io.observe(el);});
+})();
+</script>
 </body>
 </html>

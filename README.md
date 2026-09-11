@@ -2,7 +2,8 @@
 
 A sick dark-terminal paper-trading simulator for the DOGS empire.
 Five paper accounts: **Crypto, Stocks, Options, Futures, Prediction Markets.**
-No build step, no backend — just `index.html` + `styles.css` + `app.js`.
+No build step, no backend — just static HTML/CSS/JS. `index.html` is the landing
+page; `app.html` is the simulator itself.
 
 ## Use it
 
@@ -70,6 +71,6 @@ Trains live in the page — close the tab and they stop. (A headless version is 
 
 ## Develop
 
-No toolchain. Edit the files, open `index.html`, done.
+No toolchain. Edit the files, open `app.html` (simulator) or `index.html` (landing), done.
 P&L math lives in pure functions at the top of `app.js` (node-testable).
 API tests: `node api-test.js`.
