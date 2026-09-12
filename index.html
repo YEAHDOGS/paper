@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>PAPER — Fake money. Real lessons.</title>
-<meta name="description" content="PAPER is a paper-trading simulator: five fake-money accounts across crypto, stocks, options, futures, and prediction markets. No signup, nothing leaves your device.">
-<meta property="og:title" content="PAPER — Fake money. Real lessons.">
-<meta property="og:description" content="A paper-trading simulator. Five accounts, zero real money, nothing leaves your device.">
+<title>PAPER. Fake money. Real lessons.</title>
+<meta name="description" content="PAPER is a dark-terminal paper-trading simulator. Five fake-money accounts: crypto, stocks, options, futures, prediction markets. Nothing leaves your device. Not financial advice.">
+<meta property="og:title" content="PAPER. Fake money. Real lessons.">
+<meta property="og:description" content="Five fake-money trading accounts. Zero real money. Nothing leaves your device.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://yeahdogs.github.io/paper/">
 <meta property="og:image" content="https://yeahdogs.github.io/paper/og-image.png">
@@ -14,88 +14,6 @@
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; base-uri 'self'; form-action 'none'">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="favicon.svg">
-<style>
-:root{
-  --bg:#0e100d; --ink:#f2efe3; --muted:#8f8b7c; --line:#23261f;
-  --green:#9ee870; --green-dim:#3c4a2e;
-  --serif:Georgia,"Iowan Old Style","Times New Roman",serif;
-  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
-}
-*{margin:0;padding:0;box-sizing:border-box}
-html{background:var(--bg);scroll-behavior:smooth}
-html.no-motion{scroll-behavior:auto}
-body{background:var(--bg);color:var(--ink);font-family:var(--serif);-webkit-font-smoothing:antialiased;overflow-x:hidden}
-.mono{font-family:var(--mono)}
-::selection{background:var(--green);color:#0e100d}
-
-.topbar{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
-.topbar .mono{font-size:11px;letter-spacing:.14em;color:var(--muted)}
-.topbar a.mono{color:var(--ink);text-decoration:none;border:1px solid var(--line);padding:8px 12px}
-.topbar a.mono:hover{border-color:var(--green);color:var(--green)}
-
-.hero{padding:64px 18px 40px;max-width:760px;margin:0 auto}
-.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.22em;color:var(--green);margin-bottom:18px}
-.hero h1{font-size:clamp(84px,26vw,220px);line-height:.9;font-weight:400;letter-spacing:-.02em}
-.hero h1 .period{color:var(--green)}
-.lede{font-size:clamp(22px,5.6vw,34px);line-height:1.25;margin-top:14px;max-width:22ch}
-.lede em{font-style:italic;color:var(--green)}
-.cta-row{margin-top:28px;display:flex;gap:12px;flex-wrap:wrap}
-.btn{font-family:var(--mono);font-size:14px;letter-spacing:.06em;text-decoration:none;display:inline-block;padding:15px 26px;background:var(--green);color:#0e100d;border:none;cursor:pointer}
-.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
-.btn:hover{background:#7cd14f}.btn.ghost:hover{border-color:var(--green);color:var(--green)}
-.hero .mono.fine{margin-top:20px;font-size:11px;letter-spacing:.1em;color:var(--muted);line-height:1.8}
-
-.ticker{border-top:1px solid var(--line);border-bottom:1px solid var(--line);overflow:hidden;white-space:nowrap;padding:12px 0;background:#0b0d0a}
-.ticker .track{display:inline-block;will-change:transform;animation:tick 28s linear infinite}
-.ticker span{font-family:var(--mono);font-size:12px;letter-spacing:.18em;color:var(--muted);padding:0 22px}
-.ticker span b{color:var(--green);font-weight:400}
-@keyframes tick{to{transform:translateX(-50%)}}
-@media (prefers-reduced-motion:reduce){.ticker .track{animation:none}}
-
-section{padding:64px 18px;max-width:760px;margin:0 auto}
-.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.22em;color:var(--muted);margin-bottom:28px}
-.acct{display:grid;grid-template-columns:44px 1fr;gap:6px 14px;padding:20px 0;border-top:1px solid var(--line);align-items:baseline}
-.acct:last-of-type{border-bottom:1px solid var(--line)}
-.acct .n{font-family:var(--mono);font-size:12px;color:var(--green)}
-.acct h3{font-size:26px;font-weight:400;letter-spacing:-.01em}
-.acct p{grid-column:2;font-family:var(--mono);font-size:12.5px;line-height:1.7;color:var(--muted);max-width:44ch;margin-top:6px}
-.acct:nth-of-type(even){padding-left:34px}
-
-.rule-quote{padding:64px 18px;text-align:center;max-width:640px;margin:0 auto}
-.rule-quote blockquote{font-size:clamp(26px,6.4vw,40px);line-height:1.3;font-style:italic}
-.rule-quote blockquote strong{font-style:normal;color:var(--green);font-weight:400}
-.rule-quote .mono{display:block;margin-top:18px;font-size:11px;letter-spacing:.2em;color:var(--muted)}
-
-.feed{font-family:var(--mono);font-size:12.5px;line-height:2;color:var(--muted);max-width:640px}
-.feed b{color:var(--ink);font-weight:400}
-.feed .ok{color:var(--green)}
-
-.faq details{border-top:1px solid var(--line);padding:16px 0}
-.faq details:last-child{border-bottom:1px solid var(--line)}
-.faq summary{font-size:19px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:12px}
-.faq summary::-webkit-details-marker{display:none}
-.faq summary .plus{font-family:var(--mono);color:var(--green);flex-shrink:0}
-.faq p{font-family:var(--mono);font-size:13px;line-height:1.8;color:var(--muted);margin-top:10px;max-width:52ch}
-
-footer{border-top:1px solid var(--line);padding:32px 18px 110px;max-width:760px;margin:0 auto}
-footer nav{display:flex;gap:22px;flex-wrap:wrap;margin-bottom:22px}
-footer nav a{font-family:var(--mono);font-size:12px;letter-spacing:.08em;color:var(--muted);text-decoration:none}
-footer nav a:hover{color:var(--green)}
-footer .made{font-family:var(--mono);font-size:12px;color:var(--muted)}
-footer .made a{color:var(--green);text-decoration:none}
-
-.sticky-cta{display:none}
-@media (max-width:520px){
-  .sticky-cta{display:block;position:fixed;left:0;right:0;bottom:0;padding:10px 14px calc(10px + env(safe-area-inset-bottom));background:rgba(14,16,13,.94);border-top:1px solid var(--line);z-index:50}
-  .sticky-cta .btn{width:100%;text-align:center}
-}
-
-.js .rv{opacity:0;transform:translateY(18px)}
-.js .rv.in{opacity:1;transform:none;transition:opacity .7s ease,transform .7s cubic-bezier(.22,1,.36,1)}
-.no-motion .rv,.no-motion.js .rv{opacity:1;transform:none}
-@media (prefers-reduced-motion:reduce){.js .rv{opacity:1;transform:none}}
-</style>
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
 {"@type":"Question","name":"Is PAPER real money?","acceptedAnswer":{"@type":"Answer","text":"No. PAPER is a simulator. No real money moves, nothing here is financial advice, and nothing is a real order."}},
@@ -104,77 +22,297 @@ footer .made a{color:var(--green);text-decoration:none}
 {"@type":"Question","name":"Which price feeds are live?","acceptedAnswer":{"@type":"Answer","text":"Crypto quotes come from CoinGecko, no key needed. Stocks need your own free Finnhub or Twelve Data key. Futures, options, and prediction markets are manual entry."}},
 {"@type":"Question","name":"Can I drive PAPER with code?","acceptedAnswer":{"@type":"Answer","text":"Yes. The page exposes a window.Paper API (accounts, positions, trades, place, close, quote) for paper-only bots. Closing the tab stops them."}}]}
 </script>
+<style>
+:root{
+  --bg:#0e100d; --ink:#f2efe3; --mut:#8f8b7c; --line:#23261f;
+  --green:#9ee870; --amber:#f5b544;
+  --serif:Georgia,"Iowan Old Style","Times New Roman",serif;
+  --mono:ui-monospace,"SF Mono",SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{background:var(--bg)}
+body{color:var(--ink);font-family:var(--mono);-webkit-font-smoothing:antialiased;overflow:hidden}
+::selection{background:var(--green);color:#0e100d}
+
+/* fixed chrome */
+.chrome{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;justify-content:space-between;align-items:center;
+  padding:12px 18px;font-size:11px;letter-spacing:.18em;
+  background:linear-gradient(to bottom,rgba(14,16,13,.85),rgba(14,16,13,0));pointer-events:none}
+.chrome a{pointer-events:auto;color:var(--ink);text-decoration:none;border:1px solid var(--line);padding:9px 14px;background:rgba(14,16,13,.6)}
+.chrome a:hover{border-color:var(--green);color:var(--green)}
+.chrome .brand{pointer-events:auto;color:var(--ink);text-decoration:none}
+.chrome .brand b{color:var(--green);font-weight:400}
+
+/* snap scroller */
+.snap{height:100svh;overflow-y:auto;scroll-snap-type:y mandatory;overscroll-behavior:contain}
+.panel{height:100svh;min-height:100svh;scroll-snap-align:start;scroll-snap-stop:always;position:relative;overflow:hidden;display:flex}
+
+/* parallax background */
+.bg{position:absolute;inset:-12% 0;background-size:cover;background-position:center;will-change:transform;transform:translateZ(0)}
+.scrim{position:absolute;inset:0;pointer-events:none}
+.scrim-top{background:linear-gradient(to bottom,rgba(14,16,13,.92) 0%,rgba(14,16,13,.55) 42%,rgba(14,16,13,.15) 100%)}
+.scrim-bottom{background:linear-gradient(to top,rgba(14,16,13,.94) 0%,rgba(14,16,13,.5) 45%,rgba(14,16,13,.1) 100%)}
+.scrim-right{background:linear-gradient(to left,rgba(14,16,13,.94) 0%,rgba(14,16,13,.45) 50%,rgba(14,16,13,.08) 100%)}
+.scrim-left{background:linear-gradient(to right,rgba(14,16,13,.94) 0%,rgba(14,16,13,.45) 50%,rgba(14,16,13,.08) 100%)}
+.scrim-all{background:radial-gradient(120% 90% at 50% 40%,rgba(14,16,13,.25),rgba(14,16,13,.88))}
+
+/* content placement helpers */
+.inner{position:relative;z-index:2;width:100%;max-width:900px;margin:0 auto;padding:calc(64px + env(safe-area-inset-top)) 22px calc(48px + env(safe-area-inset-bottom));display:flex;flex-direction:column}
+.pos-top{justify-content:flex-start}
+.pos-bottom{justify-content:flex-end}
+.pos-mid{justify-content:center}
+.align-right{text-align:right;align-items:flex-end}
+.align-right .word{margin-left:auto}
+
+.word{font-family:var(--serif);font-weight:400;line-height:.88;letter-spacing:-.02em;
+  font-size:clamp(60px,15vw,190px);color:var(--ink);text-wrap:balance}
+.word.long{font-size:clamp(52px,10vw,130px)}
+.word .dot{color:var(--green)}
+.line{font-size:clamp(17px,4.4vw,24px);line-height:1.35;color:var(--ink);max-width:26ch;margin-top:14px}
+.line .g{color:var(--green)}
+.kicker{font-size:11px;letter-spacing:.24em;color:var(--green);margin-bottom:16px}
+
+.cta-row{margin-top:26px;display:flex;gap:12px;flex-wrap:wrap}
+.align-right .cta-row{justify-content:flex-end}
+.btn{font-family:var(--mono);font-size:13px;letter-spacing:.1em;text-decoration:none;display:inline-block;
+  padding:16px 26px;background:var(--green);color:#0e100d;border:1px solid var(--green);cursor:pointer;min-height:48px}
+.btn:hover{background:#7cd14f;border-color:#7cd14f}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.ghost:hover{border-color:var(--green);color:var(--green)}
+
+/* staggered clip reveal */
+.rv{clip-path:inset(0 0 100% 0);opacity:0;transform:translateY(26px);transition:clip-path .9s cubic-bezier(.16,1,.3,1),opacity .7s ease,transform .9s cubic-bezier(.16,1,.3,1)}
+.panel.on .rv{clip-path:inset(0 0 0% 0);opacity:1;transform:translateY(0)}
+.panel.on .rv.d1{transition-delay:.08s}.panel.on .rv.d2{transition-delay:.18s}.panel.on .rv.d3{transition-delay:.3s}.panel.on .rv.d4{transition-delay:.42s}
+
+/* sample paper tape */
+.tape{position:absolute;bottom:0;left:0;right:0;z-index:3;border-top:1px solid var(--line);background:rgba(14,16,13,.72);
+  overflow:hidden;white-space:nowrap;padding:10px 0}
+.tape .track{display:inline-block;will-change:transform;animation:tick 30s linear infinite}
+.tape span{font-size:11px;letter-spacing:.2em;color:var(--mut);padding:0 20px}
+.tape span b{color:var(--green);font-weight:400}
+.tape .tag{color:var(--amber)}
+@keyframes tick{to{transform:translateX(-50%)}}
+
+/* scroll cue docked bottom right */
+.cue{position:absolute;right:20px;bottom:52px;z-index:3;font-size:10px;letter-spacing:.3em;color:var(--mut);
+  writing-mode:vertical-rl;animation:bob 2.2s ease-in-out infinite}
+.cue::after{content:"";display:block;width:1px;height:34px;background:var(--green);margin:8px auto 0}
+@keyframes bob{0%,100%{transform:translateY(0);opacity:.7}50%{transform:translateY(8px);opacity:1}}
+
+/* account rows */
+.accts{margin-top:22px;width:100%;max-width:520px}
+.acct{display:flex;justify-content:space-between;align-items:baseline;gap:14px;padding:13px 0;border-top:1px solid rgba(242,239,227,.16)}
+.acct:last-child{border-bottom:1px solid rgba(242,239,227,.16)}
+.acct .n{font-size:14px;letter-spacing:.06em}
+.acct .d{font-size:11px;letter-spacing:.14em;color:var(--mut);text-align:right}
+
+/* notify form */
+.form{margin-top:24px;display:flex;gap:10px;max-width:440px;width:100%}
+.form input{flex:1;min-width:0;background:rgba(14,16,13,.7);border:1px solid var(--line);color:var(--ink);
+  font-family:var(--mono);font-size:14px;padding:15px 16px;min-height:52px;border-radius:0;-webkit-appearance:none}
+.form input::placeholder{color:var(--mut)}
+.form input:focus{outline:none;border-color:var(--green)}
+.form button{font-family:var(--mono);font-size:13px;letter-spacing:.1em;background:var(--green);color:#0e100d;
+  border:1px solid var(--green);padding:0 22px;min-height:52px;cursor:pointer;white-space:nowrap}
+.form button:hover{background:#7cd14f}
+.fine{margin-top:12px;font-size:11px;letter-spacing:.08em;color:var(--mut);line-height:1.7;max-width:44ch}
+.done-note{margin-top:24px;font-size:13px;letter-spacing:.06em;color:var(--green)}
+
+/* footer badge */
+.badge-wrap{position:absolute;left:22px;bottom:calc(20px + env(safe-area-inset-bottom));z-index:3;display:block;width:fit-content;max-width:180px}
+.badge-wrap img{display:block;width:100%;height:auto}
+
+.tiny-links{position:absolute;right:22px;bottom:calc(24px + env(safe-area-inset-bottom));z-index:3;font-size:10px;letter-spacing:.16em}
+.tiny-links a{color:var(--mut);text-decoration:none;margin-left:16px}
+.tiny-links a:hover{color:var(--green)}
+
+@media (prefers-reduced-motion:reduce){
+  .tape .track{animation:none}
+  .cue{animation:none}
+  .rv{clip-path:none;opacity:1;transform:none;transition:none}
+}
+@media (min-width:760px){
+  .inner{padding-left:48px;padding-right:48px}
+  .badge-wrap{left:48px;max-width:200px}
+  .tiny-links{right:48px}
+}
+</style>
 </head>
 <body>
-<script>document.documentElement.classList.add('js');if(matchMedia('(prefers-reduced-motion: reduce)').matches)document.documentElement.classList.add('no-motion');</script>
 
-<div class="topbar">
-  <span class="mono">DOGS / TRADING SIM</span>
-  <a class="mono" href="app.html">OPEN THE APP</a>
-</div>
-
-<header class="hero">
-  <div class="eyebrow rv">PAPER-TRADING SIMULATOR</div>
-  <h1 class="rv">PAPER<span class="period">.</span></h1>
-  <p class="lede rv">Fake money. <em>Real lessons.</em></p>
-  <div class="cta-row rv">
-    <a class="btn" href="app.html">OPEN THE APP</a>
-    <a class="btn ghost" href="#accounts">WHAT IT TRADES</a>
-  </div>
-  <p class="mono fine rv">FIVE PAPER ACCOUNTS · NO SIGNUP · NOTHING LEAVES THIS DEVICE<br>NOT FINANCIAL ADVICE. NOT REAL ORDERS.</p>
+<header class="chrome">
+  <a class="brand" href="#p1">PAPER<b>.</b></a>
+  <a href="app.html">OPEN THE SIMULATOR</a>
 </header>
 
-<div class="ticker" aria-hidden="true"><div class="track" id="tickerTrack">
-<span>CRYPTO <b>·</b></span><span>STOCKS <b>·</b></span><span>OPTIONS <b>·</b></span><span>FUTURES <b>·</b></span><span>PREDICTION MARKETS <b>·</b></span><span>PAPER ONLY <b>·</b></span><span>CRYPTO <b>·</b></span><span>STOCKS <b>·</b></span><span>OPTIONS <b>·</b></span><span>FUTURES <b>·</b></span><span>PREDICTION MARKETS <b>·</b></span><span>PAPER ONLY <b>·</b></span>
-</div></div>
+<main class="snap" id="snap">
 
-<section id="accounts">
-  <div class="kicker rv">01 — FIVE ACCOUNTS, ONE PAGE</div>
-  <div class="acct rv"><span class="n">01</span><h3>Crypto</h3><p>Live CoinGecko quotes, refreshed every 60 seconds. Tap the bolt, it fills the price. No key needed.</p></div>
-  <div class="acct rv"><span class="n">02</span><h3>Stocks</h3><p>Bring your own free Finnhub or Twelve Data key, stored only on your device. Without one, type quotes by hand.</p></div>
-  <div class="acct rv"><span class="n">03</span><h3>Options</h3><p>Paper simplification: calls trade like longs, puts like shorts. Contracts times premium, manual entry.</p></div>
-  <div class="acct rv"><span class="n">04</span><h3>Futures</h3><p>No free feed exists, so none is faked. You type the price, PAPER does the math.</p></div>
-  <div class="acct rv"><span class="n">05</span><h3>Prediction markets</h3><p>Marked at cost until you resolve them. YES pays 100, NO pays 0. Simple.</p></div>
-</section>
+  <!-- 1 PAPER -->
+  <section class="panel" id="p1">
+    <div class="bg" style="background-image:url('img/candles-haze.jpg')"></div>
+    <div class="scrim scrim-top"></div>
+    <div class="inner pos-top">
+      <p class="kicker rv">PAPER TRADING SIMULATOR</p>
+      <h1 class="word rv d1">PAPER<span class="dot">.</span></h1>
+      <p class="line rv d2">Fake money. <span class="g">Real lessons.</span></p>
+      <div class="cta-row rv d3">
+        <a class="btn" href="app.html">OPEN THE SIMULATOR</a>
+      </div>
+      <p class="fine rv d4">No signup. No real money. Nothing leaves your device.<br>Not financial advice.</p>
+    </div>
+    <div class="cue" aria-hidden="true">SCROLL</div>
+    <div class="tape" aria-hidden="true"><div class="track">
+      <span><span class="tag">SAMPLE PAPER TAPE</span></span><span>BTC <b>+2.4%</b></span><span>SPY <b>-0.3%</b></span><span>QQQ CALL <b>+11.0%</b></span><span>/ES <b>-1.1%</b></span><span>ELECTION YES <b>72c</b></span><span>ETH <b>+4.8%</b></span><span>AAPL PUT <b>-8.2%</b></span><span>BTC <b>+2.4%</b></span><span>SPY <b>-0.3%</b></span><span>QQQ CALL <b>+11.0%</b></span><span>/ES <b>-1.1%</b></span><span>ELECTION YES <b>72c</b></span><span>ETH <b>+4.8%</b></span><span>AAPL PUT <b>-8.2%</b></span>
+    </div></div>
+  </section>
 
-<div class="rule-quote rv">
-  <blockquote>Paper stays paper until <strong>60 days green</strong>. Then we talk.</blockquote>
-  <span class="mono">THE ONE RULE</span>
-</div>
+  <!-- 2 FIVE ACCOUNTS -->
+  <section class="panel">
+    <div class="bg" style="background-image:url('img/terminal-candles.jpg')"></div>
+    <div class="scrim scrim-bottom"></div>
+    <div class="inner pos-bottom">
+      <h2 class="word long rv">FIVE<br>ACCOUNTS<span class="dot">.</span></h2>
+      <p class="line rv d1">Crypto. Stocks. Options. Futures. Predictions.</p>
+      <div class="accts rv d2">
+        <div class="acct"><span class="n">CRYPTO</span><span class="d">LIVE QUOTES, NO KEY NEEDED</span></div>
+        <div class="acct"><span class="n">STOCKS</span><span class="d">BRING YOUR OWN FREE KEY</span></div>
+        <div class="acct"><span class="n">OPTIONS</span><span class="d">CALLS, PUTS, MANUAL PREMIUM</span></div>
+        <div class="acct"><span class="n">FUTURES</span><span class="d">MANUAL MARKS, HONEST MATH</span></div>
+        <div class="acct"><span class="n">PREDICTIONS</span><span class="d">YES PAYS 100, NO PAYS 0</span></div>
+      </div>
+    </div>
+  </section>
 
-<section>
-  <div class="kicker rv">02 — BOTS WELCOME</div>
-  <p class="feed rv">Open devtools on the app and drive it with <b>window.Paper</b>: accounts, positions, trades, place, close, quote. Same engine as the UI, same localStorage. Paper only, fake money, always. Trains die when the tab closes.</p>
-</section>
+  <!-- 3 FAKE MONEY -->
+  <section class="panel">
+    <div class="bg" style="background-image:url('img/paper-ledger.jpg')"></div>
+    <div class="scrim scrim-right"></div>
+    <div class="inner pos-mid align-right">
+      <h2 class="word rv">FAKE<br>MONEY<span class="dot">.</span></h2>
+      <p class="line rv d1">No real money moves here.</p>
+      <p class="line rv d2" style="color:var(--mut)">Blow up the account. Learn the lesson. Keep the rent.</p>
+    </div>
+  </section>
 
-<section class="faq">
-  <div class="kicker rv">03 — QUESTIONS</div>
-  <details class="rv"><summary>Is this real money?<span class="plus">+</span></summary><p>No. PAPER is a simulator. No real money moves, nothing here is financial advice, and nothing is a real order.</p></details>
-  <details class="rv"><summary>Do I need an account?<span class="plus">+</span></summary><p>No login, no signup. Open the page and trade. Positions live in your device's localStorage.</p></details>
-  <details class="rv"><summary>Where does my data go?<span class="plus">+</span></summary><p>Nowhere. There is no backend. Export a JSON backup from the Rules tab before switching devices.</p></details>
-  <details class="rv"><summary>Which feeds are live?<span class="plus">+</span></summary><p>Crypto: CoinGecko, keyless, 60s refresh. Stocks: your free Finnhub or Twelve Data key. Futures, options, prediction: manual.</p></details>
-  <details class="rv"><summary>Can I trade with code?<span class="plus">+</span></summary><p>Yes. The app exposes a window.Paper API for paper-only bots. Close the tab and they stop.</p></details>
-</section>
+  <!-- 4 FEEDS -->
+  <section class="panel">
+    <div class="bg" style="background-image:url('img/trading-desk.jpg')"></div>
+    <div class="scrim scrim-top"></div>
+    <div class="inner pos-top align-right">
+      <h2 class="word rv">FEEDS<span class="dot">.</span></h2>
+      <p class="line rv d1">Live crypto quotes. Your own free key for stocks.</p>
+      <p class="line rv d2" style="color:var(--mut)">Honest feeds only. No invented prices.</p>
+    </div>
+  </section>
 
-<footer>
-  <nav>
-    <a href="app.html">Open the app</a>
-    <a href="privacy.html">Privacy</a>
-    <a href="terms.html">Terms</a>
-    <a href="sitemap.xml">Sitemap</a>
-  </nav>
-  <p class="made">This product was made by <a href="https://wearedogs.net">DOGS</a>.</p>
-</footer>
+  <!-- 5 TRAINS -->
+  <section class="panel">
+    <div class="bg" style="background-image:url('img/terminal-candles.jpg');background-position:80% 20%"></div>
+    <div class="scrim scrim-bottom"></div>
+    <div class="inner pos-bottom">
+      <h2 class="word rv">TRAINS<span class="dot">.</span></h2>
+      <p class="line rv d1">Run bots against your paper book.</p>
+      <p class="line rv d2" style="color:var(--mut)">The Paper API lives in devtools. Close the tab and they stop.</p>
+      <div class="cta-row rv d3">
+        <a class="btn ghost" href="app.html">OPEN THE SIMULATOR</a>
+      </div>
+    </div>
+  </section>
 
-<div class="sticky-cta"><a class="btn" href="app.html">OPEN THE APP</a></div>
+  <!-- 6 RULES -->
+  <section class="panel">
+    <div class="bg" style="background-image:url('img/paper-ledger.jpg');background-position:20% 60%"></div>
+    <div class="scrim scrim-left"></div>
+    <div class="inner pos-mid">
+      <h2 class="word rv">RULES<span class="dot">.</span></h2>
+      <p class="line rv d1">Read them before every session.</p>
+      <p class="line rv d2" style="color:var(--mut)">Paper stays paper until 60 days green. Then we talk.</p>
+    </div>
+  </section>
+
+  <!-- 7 START -->
+  <section class="panel">
+    <div class="bg" style="background-image:url('img/candles-haze.jpg');background-position:70% 80%"></div>
+    <div class="scrim scrim-all"></div>
+    <div class="inner pos-top">
+      <h2 class="word rv">START<span class="dot">.</span></h2>
+      <p class="line rv d1">Open it. Paper stays paper.</p>
+      <div class="cta-row rv d2">
+        <a class="btn" href="app.html">OPEN THE SIMULATOR</a>
+      </div>
+      <form class="form rv d3" id="notify" autocomplete="off">
+        <input type="email" name="email" placeholder="email for updates" aria-label="Email for updates" required>
+        <button type="submit">NOTIFY ME</button>
+      </form>
+      <p class="done-note rv" id="notify-done" hidden>You are on the list. Saved on this device only.</p>
+      <p class="fine rv d4">Saved in this device only. No account, no server, no spam.<br>Not financial advice. Never was.</p>
+    </div>
+    <a class="badge-wrap" href="https://wearedogs.net" rel="noopener">
+      <img src="img/made-by-dogs.png" alt="This product was made by DOGS">
+    </a>
+    <nav class="tiny-links" aria-label="Legal">
+      <a href="privacy.html">PRIVACY</a>
+      <a href="terms.html">TERMS</a>
+    </nav>
+  </section>
+
+</main>
 
 <script>
 (function(){
-  if(document.documentElement.classList.contains('no-motion'))return;
-  var io=new IntersectionObserver(function(es){
-    es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');io.unobserve(e.target);}});
-  },{threshold:.12,rootMargin:'0px 0px -8% 0px'});
-  document.querySelectorAll('.rv').forEach(function(el){io.observe(el);});
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var panels = Array.prototype.slice.call(document.querySelectorAll('.panel'));
+  var bgs = panels.map(function(p){ return p.querySelector('.bg'); });
+
+  /* entry reveals */
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if(e.isIntersecting) e.target.classList.add('on'); });
+  }, {root: document.getElementById('snap'), threshold: 0.35});
+  panels.forEach(function(p){ io.observe(p); });
+
+  /* parallax: single rAF loop, transform only */
+  if(!reduce){
+    var snap = document.getElementById('snap');
+    var ticking = false;
+    function update(){
+      ticking = false;
+      var vh = window.innerHeight;
+      panels.forEach(function(p, i){
+        var r = p.getBoundingClientRect();
+        var y = (r.top / vh) * -0.12 * vh;
+        bgs[i].style.transform = 'translate3d(0,' + y.toFixed(1) + 'px,0) scale(1.12)';
+      });
+    }
+    function request(){ if(!ticking){ ticking = true; requestAnimationFrame(update); } }
+    snap.addEventListener('scroll', request, {passive:true});
+    window.addEventListener('resize', request);
+    update();
+  }
+
+  /* honest localStorage notify form */
+  var form = document.getElementById('notify');
+  var done = document.getElementById('notify-done');
+  function showDone(){
+    form.style.display = 'none';
+    done.hidden = false;
+  }
+  try {
+    if(window.localStorage.getItem('paper-notify')) showDone();
+  } catch(e){}
+  form.addEventListener('submit', function(ev){
+    ev.preventDefault();
+    var email = form.email.value.trim();
+    if(!email) return;
+    try { window.localStorage.setItem('paper-notify', JSON.stringify({email: email, at: Date.now()})); } catch(e){}
+    showDone();
+  });
+
+  /* deep link from fixed brand */
+  document.querySelector('.brand').addEventListener('click', function(ev){
+    ev.preventDefault();
+    panels[0].scrollIntoView({behavior: reduce ? 'auto' : 'smooth'});
+  });
 })();
 </script>
 </body>
